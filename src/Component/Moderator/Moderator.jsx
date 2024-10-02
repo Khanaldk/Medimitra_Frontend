@@ -73,9 +73,6 @@ const ModeratorDashboard = () => {
   const HandleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log("formData");
-      console.log(formData);
-
       await createNewVaccination(formData);
     } catch (error) {
       console.error("Something went wrong:", error);
@@ -90,10 +87,8 @@ const ModeratorDashboard = () => {
   };
 
   return (
-    <div className="h-screen flex ">
-      <div className="h-screen">
-        <ModeratorNav />
-      </div>
+    <div className="flex max-h-screen">
+      <ModeratorNav />
 
       <div className="flex-1 p-6 bg-gray-100 overflow-auto">
         <h2 className="text-2xl font-bold mb-4">Add New Vaccination</h2>

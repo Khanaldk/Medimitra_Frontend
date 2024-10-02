@@ -66,6 +66,48 @@ export const BookVaccinationApi = createApi({
       },
       providesTags: ["BookVaccination"],
     }),
+
+    markedBookVaccinationAsServed: builder.mutation({
+      query: () => {
+        const token = GetAuthToken();
+        return {
+          url: "/api/BookingVaccination/markedStatusAsServed",
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+      },
+      invalidatesTags: ["BookVaccination"],
+    }),
+
+    markedBookVaccinationAsDelayed: builder.mutation({
+      query: () => {
+        const token = GetAuthToken();
+        return {
+          url: "/api/BookingVaccination/markedStatusAsDelayed",
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+      },
+      invalidatesTags: ["BookVaccination"],
+    }),
+
+    GetAllDelayedUser: builder.query({
+      query: () => {
+        const token = GetAuthToken();
+        return {
+          url: "/api/BookingVaccination/retrieveVaccinationBookDelayed",
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+      },
+      providesTags: ["BookVaccination"],
+    }),
   }),
 });
 
@@ -74,4 +116,7 @@ export const {
   useGetAllUserBookVaccinationQuery,
   useGetAllBookVaccinationQuery,
   usePeekNextBookingVaccinationQuery,
+  useMarkedBookVaccinationAsServedMutation,
+  useMarkedBookVaccinationAsDelayedMutation,
+  useGetAllDelayedUserQuery,
 } = BookVaccinationApi;

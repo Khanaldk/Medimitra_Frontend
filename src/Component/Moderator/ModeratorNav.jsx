@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 
 const ModeratorNav = () => {
   return (
-    <div className="bg-gray-800 text-white w-64 h-screen flex flex-col">
+    <div className="bg-gray-800 text-white w-64 flex h-screen flex-col">
       {/* Sidebar Content */}
       <div className="flex-1 p-6">
         <h2 className="text-2xl font-bold mb-6">Moderator Dashboard</h2>

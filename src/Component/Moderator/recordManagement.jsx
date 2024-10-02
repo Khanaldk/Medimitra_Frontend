@@ -2,43 +2,115 @@ import React, { useState, useEffect } from "react";
 import ModeratorNav from "./ModeratorNav";
 import { useNavigate } from "react-router-dom";
 import GetAuthToken from "../Layout/GetAuthToken";
-import { usePeekNextBookingVaccinationQuery } from "../../Service/BookVaccinationApi";
+
+import {
+  useGetAllDelayedUserQuery,
+  useMarkedBookVaccinationAsDelayedMutation,
+  useMarkedBookVaccinationAsServedMutation,
+  usePeekNextBookingVaccinationQuery,
+} from "../../Service/BookVaccinationApi";
+import toast from "react-hot-toast";
+import withSessionTimeout from "../Layout/withSessionTimeout ";
 
 const RecordManagement = () => {
   const navigate = useNavigate();
   const token = GetAuthToken();
-  const { data, error, isLoading } = usePeekNextBookingVaccinationQuery();
+  const {
+    data: peekedData,
+    refetch,
+    error,
+    isLoading,
+  } = usePeekNextBookingVaccinationQuery();
+
+  const {
+    data: DelayedData,
+    error: delayError,
+    isLoading: Loading,
+  } = useGetAllDelayedUserQuery();
+  console.log(DelayedData?.data?.$values);
+  console.log(delayError);
+  console.log(Loading);
+
   const [showPopup, setShowPopup] = useState(false);
 
+  const [MarkedBookVaccinationAsServed, responseInfo] =
+    useMarkedBookVaccinationAsServedMutation();
+
+  const [MarkedBookVaccinationAsDelayed, responseInfoPart] =
+    useMarkedBookVaccinationAsDelayedMutation();
+
   const handlePeekClick = () => {
+    refetch();
     const userConfirmed = window.confirm(
       "Do you want to peek the next booking details?"
     );
     if (userConfirmed) {
-      setShowPopup(true);
+      if (error?.data?.type == "EmptyQueue") {
+        setShowPopup(false);
+        toast.error(error?.data?.message);
+      } else {
+        setShowPopup(true);
+      }
+    }
+  };
+
+  const handleServeClick = async () => {
+    const userConfirmed = window.confirm(`Do you want to serve user?`);
+    if (userConfirmed) {
+      try {
+        await MarkedBookVaccinationAsServed();
+      } catch (error) {
+        console.error("Something went wrong:", error);
+      }
+    }
+  };
+
+  const handleDelayClick = async () => {
+    const userConfirmed = window.confirm(`Do you want to make user delay?`);
+    if (userConfirmed) {
+      try {
+        await MarkedBookVaccinationAsDelayed();
+      } catch (error) {
+        console.error("Something went wrong:", error);
+      }
     }
   };
 
   const closePopup = () => {
     setShowPopup(false);
   };
-  console.log(data);
 
   useEffect(() => {
     if (!token) {
       navigate("/login");
     }
-  }, [!token]);
+
+    if (responseInfo?.data?.data) {
+      toast.success(`${peekedData?.data?.patientName} served successfully.`);
+    }
+
+    if (responseInfo?.error?.data?.type == "NoDataInQueueForServe") {
+      toast.error(responseInfo?.error?.data?.message);
+    }
+  }, [!token, responseInfo?.data, responseInfo?.error]);
+
+  useEffect(() => {
+    if (responseInfoPart?.data?.data) {
+      toast.success(`${peekedData?.data?.patientName} switch to delay.`);
+    }
+    if (responseInfoPart?.error?.data?.type == "DelayedError") {
+      toast.error(responseInfoPart?.error?.data?.message);
+    }
+  }, [responseInfoPart?.data, responseInfoPart?.error]);
 
   return (
     <>
       <div className="flex">
         <div>
-          {" "}
           <ModeratorNav />
         </div>
-        <div className="w-full">
-          <div className="flex flex-col min-h-screen p-6 bg-gray-100">
+        <div className="w-full overflow-auto">
+          <div className="flex flex-col h-screen p-6 bg-gray-100">
             <h2 className="text-2xl font-bold mb-4">Record Management</h2>
 
             <div className="mb-8 mt-3 flex justify-around space-x-2">
@@ -48,15 +120,21 @@ const RecordManagement = () => {
               >
                 {isLoading ? "Peeking.." : "Peek User"}
               </button>
-              <button className="bg-green-500 text-white px-14 py-3 rounded hover:bg-green-700">
+              <button
+                className="bg-green-500 text-white px-14 py-3 rounded hover:bg-green-700"
+                onClick={handleServeClick}
+              >
                 Serve User
               </button>
-              <button className="bg-red-500 text-white px-14 py-3 rounded hover:bg-red-700">
+              <button
+                className="bg-red-500 text-white px-14 py-3 rounded hover:bg-red-700"
+                onClick={handleDelayClick}
+              >
                 Make Delay
               </button>
             </div>
 
-            {data?.data && showPopup && (
+            {peekedData?.data && showPopup && (
               <>
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                   <div className="bg-white p-8 rounded-lg shadow-lg w-[600px] h-auto">
@@ -67,38 +145,41 @@ const RecordManagement = () => {
                     <div className="space-y-4">
                       {" "}
                       <p className="text-lg">
-                        <strong>Patient Name:</strong> {data?.data?.patientName}
+                        <strong>Patient Name:</strong>{" "}
+                        {peekedData?.data?.patientName}
                       </p>
                       <p className="text-lg">
-                        <strong>Date of Birth:</strong> {data?.data?.dob}
+                        <strong>Date of Birth:</strong> {peekedData?.data?.dob}
                       </p>
                       <p className="text-lg">
-                        <strong>Patient Address:</strong> {data?.data?.address}
+                        <strong>Patient Address:</strong>{" "}
+                        {peekedData?.data?.address}
                       </p>
                       <p className="text-lg">
-                        <strong>Booking Date:</strong> {data?.data?.bookingDate}
+                        <strong>Booking Date:</strong>{" "}
+                        {peekedData?.data?.bookingDate}
                       </p>
                       <p className="text-lg">
                         <strong>Vaccination Name:</strong>{" "}
-                        {data?.data?.vaccination?.vaccinationName}
+                        {peekedData?.data?.vaccination?.vaccinationName}
                       </p>
                       <p className="text-lg">
                         <strong>Vaccination Type:</strong>{" "}
-                        {data?.data?.vaccination?.vaccinationType}
+                        {peekedData?.data?.vaccination?.vaccinationType}
                       </p>
                       <p className="text-lg">
                         <strong>Vaccination Dose:</strong>{" "}
-                        {data?.data?.vaccination?.vaccinationDose}
+                        {peekedData?.data?.vaccination?.vaccinationDose}
                       </p>
                       <p className="text-lg">
                         <strong>Vaccination Location:</strong>{" "}
-                        {data?.data?.vaccination?.location}
+                        {peekedData?.data?.vaccination?.location}
                       </p>
                       <p className="text-lg">
-                        <strong>Status:</strong> {data?.data?.status}
+                        <strong>Status:</strong> {peekedData?.data?.status}
                       </p>
                       <p className="text-lg">
-                        <strong>Token:</strong> {data?.data?.token}
+                        <strong>Token:</strong> {peekedData?.data?.token}
                       </p>
                     </div>
                     <div className="flex justify-end mt-8 space-x-3">
@@ -123,27 +204,45 @@ const RecordManagement = () => {
             <table className="table-auto w-full bg-white shadow-lg rounded">
               <thead>
                 <tr className="bg-gray-300">
-                  <th className="p-3">S.N</th>
-                  <th className="p-3">Vaccination Name</th>
-                  <th className="p-3">Vaccination Type</th>
-                  <th className="p-3">Patient's Name</th>
-                  <th className="p-3">Status</th>
+                  <th className="p-3">Patient Name</th>
+                  <th className="p-3">DOB</th>
+                  <th className="p-3">Patient Address</th>
+                  <th className="p-3">Vaccine Name</th>
+                  <th className="p-3"> Dose</th>
+                  <th className="p-3">Booked Date</th>
+                  <th classDose="p-3">Token</th>
+                  <th classDose="p-3">Status</th>
+
                   <th className="p-3">Action</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td className="p-3">vaccinationName</td>
-                  <td className="p-3">vaccinationName</td>
-                  <td className="p-3">vaccinationName</td>
-                  <td className="p-3">vaccinationName</td>
-                  <td className="p-3">vaccinationName</td>
-                  <td className="p-3">
-                    <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700">
-                      Update to Served
-                    </button>
-                  </td>
-                </tr>
+                {DelayedData &&
+                  DelayedData?.data?.$values.map((value) => (
+                    <tr key={value?.bookingId}>
+                      <td className="text-center py-3">{value?.patientName}</td>
+                      <td className="text-center py-3">{value?.dob}</td>
+                      <td className="text-center py-3">{value?.address}</td>
+                      <td className="text-center py-3">
+                        {value?.vaccinationName}
+                      </td>
+                      <td className="text-center py-3">
+                        {" "}
+                        {value?.vaccinationDose}
+                      </td>
+                      <td className="text-center py-3"> {value?.serveDate}</td>
+                      <td className="text-center py-3"> {value?.token}</td>
+                      <td className="text-center py-3">
+                        {" "}
+                        {value?.bookingStatus}
+                      </td>
+                      <td className="text-center py-3">
+                        <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700">
+                          Update to serve
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -153,7 +252,7 @@ const RecordManagement = () => {
   );
 };
 
-export default RecordManagement;
+export default withSessionTimeout(RecordManagement);
 
 // import React, { useState } from "react";
 // import { usePeekNextBookingVaccinationQuery } from "../../Service/BookVaccinationApi";

@@ -16,12 +16,10 @@ const UserManagement = () => {
   }, [!token]);
 
   return (
-    <div className="flex h-screen">
-      <div>
-        <ModeratorNav />
-      </div>
+    <div className="flex  max-h-screen">
+      <ModeratorNav />
 
-      <div className="flex-1 p-6 bg-gray-100">
+      <div className="flex-1 p-6 bg-gray-100  overflow-auto">
         <h2 className="text-2xl font-bold mb-4">Managing User Vaccination</h2>
 
         <table className="table-auto w-full bg-white shadow-lg rounded ">
@@ -55,10 +53,7 @@ const UserManagement = () => {
                   <td className="text-center py-3"> {value?.serveDate}</td>
                   <td className="text-center py-3"> {value?.location}</td>
                   <td className="text-center py-3"> {value?.ageGroup}</td>
-                  <td className="text-center py-3">
-                    {" "}
-                    {value?.vaccinationStatus}
-                  </td>
+                  <td className="text-center py-3"> {value?.bookingStatus}</td>
                   <td className="text-center py-3"> {value?.token}</td>
                   <td>
                     <button className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700">
